@@ -18,3 +18,66 @@
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
+      - name: Add Docker APT repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+        state: present
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose
+        state: present
+
+     - name: Add user to Docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install unzip package
+      apt:
+        name: unzip
+        state: present
+
+    - name: Download Terraform binary
+      get_url:
+        url: "https://releases.hashicorp.com/terraform/1.0.10/terraform_1.0.10_linux_amd64.zip"
+        dest: "/tmp/terraform.zip"
+
+    - name: Extract Terraform binary
+      ansible.builtin.unarchive:
+        src: "/tmp/terraform.zip"
+         dest: "/usr/local/bin/"
+        remote_src: yes
+        creates: "/usr/local/bin/terraform"
+    - name: Make Terraform executable
+      file:
+        path: /usr/local/bin/terraform
+        mode: 'u+x'
+
+    - name: Start GitLab container
+      docker_container:
+        name: gitlab
+        image: gitlab/gitlab-ce:latest
+        ports:
+          - "2222:22"
+          - "8080:80"
+          - "8443:443"
+        restart_policy: always
+
+    - name: Add current user to docker group
+        user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+
+    
